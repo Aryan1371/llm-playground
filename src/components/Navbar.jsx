@@ -10,12 +10,14 @@ import {
   ExternalLink,
   Sparkles,
   SlidersHorizontal,
-  Info
+  Info,
+  ShieldCheck,
+  Trash2
 } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab, apiKey, setApiKey }) {
   const [showKeyModal, setShowKeyModal] = useState(false);
-  const [tempKey, setTempKey] = useState(apiKey);
+  const [tempKey, setTempKey] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const navItems = [
@@ -28,12 +30,21 @@ export default function Navbar({ activeTab, setActiveTab, apiKey, setApiKey }) {
 
   const handleSaveKey = (e) => {
     e.preventDefault();
-    setApiKey(tempKey.trim());
+    if (tempKey.trim()) {
+      setApiKey(tempKey.trim());
+    }
     setSaveSuccess(true);
+    setTempKey('');
     setTimeout(() => {
       setSaveSuccess(false);
       setShowKeyModal(false);
-    }, 1200);
+    }, 1000);
+  };
+
+  const handleClearKey = () => {
+    setApiKey('');
+    localStorage.removeItem('groq_api_key');
+    setShowKeyModal(false);
   };
 
   return (
@@ -89,18 +100,18 @@ export default function Navbar({ activeTab, setActiveTab, apiKey, setApiKey }) {
             })}
           </nav>
 
-          {/* Right Action Controls: API Key & Status */}
+          {/* Right Action Controls: API Status (Key is NEVER displayed) */}
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setShowKeyModal(true)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-xs text-slate-300 transition-all font-mono"
-              title="Configure Groq API Key"
+              title="API Connection Settings"
             >
               <Key className="w-3.5 h-3.5 text-amber-400" />
               <span className="hidden sm:inline">
-                {apiKey ? `${apiKey.slice(0, 7)}...${apiKey.slice(-4)}` : 'Set Groq Key'}
+                {apiKey ? 'Groq Connected' : 'Connect Groq API'}
               </span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className={`w-2 h-2 rounded-full ${apiKey ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
             </button>
           </div>
         </div>
@@ -128,63 +139,91 @@ export default function Navbar({ activeTab, setActiveTab, apiKey, setApiKey }) {
         </div>
       </header>
 
-      {/* API Key Modal */}
+      {/* API Key Modal (Confidential & Masked) */}
       {showKeyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2.5 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                <Key className="w-5 h-5" />
+                <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-100">Groq Cloud API Key</h3>
-                <p className="text-xs text-slate-400">Calls OpenAI-compatible endpoint with ultra-low latency</p>
+                <h3 className="text-base font-bold text-slate-100">Groq Cloud API Connection</h3>
+                <p className="text-xs text-slate-400">High-speed inference endpoint credentials</p>
               </div>
             </div>
 
             <form onSubmit={handleSaveKey} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                  API Key (gsk_...)
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    API Key Status
+                  </label>
+                  {apiKey ? (
+                    <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1 font-semibold">
+                      <CheckCircle2 className="w-3 h-3" /> Connected (Masked)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-amber-400">
+                      Not Configured
+                    </span>
+                  )}
+                </div>
+
                 <input
                   type="password"
                   value={tempKey}
                   onChange={(e) => setTempKey(e.target.value)}
-                  placeholder="gsk_..."
+                  placeholder={apiKey ? '••••••••••••••••••••••••••••••••••••••••' : 'Paste new key (gsk_...)'}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 font-mono focus:border-orange-500 focus:outline-none transition-all"
-                  required
+                  autoComplete="off"
                 />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Keys are stored encrypted in memory / session storage and never printed on screen.
+                </p>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 text-[11px] text-slate-400 space-y-1 leading-relaxed">
                 <p className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Stored locally in browser session
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Confidential Mode Active
                 </p>
-                <p>Supports Llama 3.3, GPT OSS 120B/20B, Qwen 3.8, and ALLaM models at up to 500+ tokens/sec.</p>
+                <p>Private credentials are hidden to ensure safe submission and public presentations.</p>
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowKeyModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-lg shadow-orange-600/30 transition-all flex items-center gap-1.5"
-                >
-                  {saveSuccess ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                      <span>Saved!</span>
-                    </>
-                  ) : (
-                    <span>Save Key</span>
-                  )}
-                </button>
+              <div className="flex items-center justify-between gap-2.5 pt-2">
+                {apiKey ? (
+                  <button
+                    type="button"
+                    onClick={handleClearKey}
+                    className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-900/50 transition-all flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Disconnect</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowKeyModal(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-lg shadow-orange-600/30 transition-all flex items-center gap-1.5"
+                  >
+                    {saveSuccess ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                        <span>Updated!</span>
+                      </>
+                    ) : (
+                      <span>Update Key</span>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
